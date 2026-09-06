@@ -1,0 +1,16 @@
+{
+  "name": "erifilmes-stremio-addon",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Addon Stremio que lê a playlist M3U do EriFilmesSerie no GitHub.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "stremio-addon-sdk": "1.6.10"
+  }
+}
