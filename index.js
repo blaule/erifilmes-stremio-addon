@@ -8,16 +8,16 @@ const PLAYLIST_URL =
 
 
 /* =========================================================
-   MANIFEST DO ADDON
+   MANIFEST
 ========================================================= */
 
 const manifest = {
   id: "com.erifilmes.iptv",
-  version: "1.1.0",
+  version: "1.2.0",
   name: "EriFilmes",
 
   description:
-    "Filmes da playlist EriFilmesSerie com pôsteres.",
+    "Filmes da playlist EriFilmes com poster e fundo de tela.",
 
   logo:
     "https://i.ibb.co/yFc8Ht02/12-anos-de-escr-1.jpg",
@@ -61,7 +61,7 @@ const builder = new addonBuilder(manifest);
 
 
 /* =========================================================
-   CACHE DA PLAYLIST
+   CACHE
 ========================================================= */
 
 let cache = {
@@ -84,7 +84,7 @@ function clean(value) {
 
 
 /* =========================================================
-   LER ATRIBUTOS DA EXTINF
+   ATRIBUTO DA EXTINF
 ========================================================= */
 
 function getAttribute(line, name) {
@@ -124,23 +124,15 @@ function getAttribute(line, name) {
 
   }
 
-
   return "";
-
 }
 
 
 /* =========================================================
-   ENCONTRAR PÔSTER
+   POSTER
 ========================================================= */
 
 function getPoster(line) {
-
-  /*
-    Formato normal:
-
-    tvg-logo="https://..."
-  */
 
   let poster =
     getAttribute(line, "tvg-logo");
@@ -153,15 +145,13 @@ function getPoster(line) {
 
 
   /*
-    Tenta corrigir formatos quebrados
-    encontrados em algumas playlists.
+    Formatos quebrados da playlist
   */
 
-  const broken = line.match(
-
-    /tvg-logo\s*=\s*(?:grupo\s*)?"([^"]+\.(?:jpg|jpeg|png|webp)(?:\?[^"]*)?)"/i
-
-  );
+  const broken =
+    line.match(
+      /tvg-logo\s*=\s*(?:grupo\s*)?"([^"]+\.(?:jpg|jpeg|png|webp)(?:\?[^"]*)?)"/i
+    );
 
 
   if (broken) {
@@ -170,10 +160,6 @@ function getPoster(line) {
 
   }
 
-
-  /*
-    Alguns arquivos podem utilizar logo=
-  */
 
   poster =
     getAttribute(line, "logo");
@@ -186,19 +172,105 @@ function getPoster(line) {
 
 
   return "";
-
 }
 
 
 /* =========================================================
-   ENCONTRAR CATEGORIA
+   BACKGROUND / FUNDO
+========================================================= */
+
+function getBackground(line, poster) {
+
+  /*
+    Primeiro procura:
+
+    background="https://..."
+  */
+
+  let background =
+    getAttribute(line, "background");
+
+  if (background) {
+
+    return background;
+
+  }
+
+
+  /*
+    Também aceita:
+
+    backdrop="https://..."
+  */
+
+  background =
+    getAttribute(line, "backdrop");
+
+  if (background) {
+
+    return background;
+
+  }
+
+
+  /*
+    Aceita:
+
+    fanart="https://..."
+  */
+
+  background =
+    getAttribute(line, "fanart");
+
+  if (background) {
+
+    return background;
+
+  }
+
+
+  /*
+    Aceita:
+
+    tvg-background="https://..."
+  */
+
+  background =
+    getAttribute(line, "tvg-background");
+
+  if (background) {
+
+    return background;
+
+  }
+
+
+  /*
+    Se não existir imagem de fundo,
+    usa o poster como fallback.
+
+    Isso evita deixar o fundo vazio.
+  */
+
+  if (poster) {
+
+    return poster;
+
+  }
+
+
+  return "";
+}
+
+
+/* =========================================================
+   GRUPO / CATEGORIA
 ========================================================= */
 
 function getGroup(line) {
 
   let group =
     getAttribute(line, "group-title");
-
 
   if (group) {
 
@@ -207,15 +279,10 @@ function getGroup(line) {
   }
 
 
-  /*
-    Formatos alternativos/quebrados
-  */
-
-  const broken = line.match(
-
-    /(?:group[\s-]*title|grupo[\s-]*t[ií]tulo)\s*=\s*"([^"]+)"/i
-
-  );
+  const broken =
+    line.match(
+      /(?:group[\s-]*title|grupo[\s-]*t[ií]tulo)\s*=\s*"([^"]+)"/i
+    );
 
 
   if (broken) {
@@ -225,13 +292,8 @@ function getGroup(line) {
   }
 
 
-  /*
-    Também tenta group=
-  */
-
   group =
     getAttribute(line, "group");
-
 
   if (group) {
 
@@ -241,12 +303,11 @@ function getGroup(line) {
 
 
   return "EriFilmes";
-
 }
 
 
 /* =========================================================
-   NOME DO FILME
+   TÍTULO
 ========================================================= */
 
 function getTitle(line) {
@@ -265,7 +326,6 @@ function getTitle(line) {
 
 
   return "Sem titulo";
-
 }
 
 
@@ -290,7 +350,6 @@ function getYear(title, line) {
 
 
   return undefined;
-
 }
 
 
@@ -342,7 +401,6 @@ function getDescription(lines, startIndex) {
 
 
   return "";
-
 }
 
 
@@ -371,10 +429,6 @@ function parseM3U(text) {
       lines[i].trim();
 
 
-    /*
-      Procuramos EXTINF
-    */
-
     if (
       !line
         .toUpperCase()
@@ -386,13 +440,36 @@ function parseM3U(text) {
     }
 
 
+    /*
+      Nome
+    */
+
     const title =
       getTitle(line);
 
 
+    /*
+      Poster
+    */
+
     const poster =
       getPoster(line);
 
+
+    /*
+      Fundo
+    */
+
+    const background =
+      getBackground(
+        line,
+        poster
+      );
+
+
+    /*
+      Categoria
+    */
 
     const group =
       getGroup(line);
@@ -408,12 +485,20 @@ function parseM3U(text) {
         .filter(Boolean);
 
 
+    /*
+      Descrição
+    */
+
     const description =
       getDescription(
         lines,
         i
       );
 
+
+    /*
+      Ano
+    */
 
     const year =
       getYear(
@@ -423,7 +508,7 @@ function parseM3U(text) {
 
 
     /*
-      Procurar a URL do vídeo.
+      Encontrar vídeo
     */
 
     let url = "";
@@ -446,10 +531,6 @@ function parseM3U(text) {
       }
 
 
-      /*
-        Ignora outras tags M3U
-      */
-
       if (
         next.startsWith("#")
       ) {
@@ -458,10 +539,6 @@ function parseM3U(text) {
 
       }
 
-
-      /*
-        Encontramos a URL
-      */
 
       if (
         /^https?:\/\//i.test(next)
@@ -479,7 +556,7 @@ function parseM3U(text) {
 
 
     /*
-      Sem vídeo não adiciona.
+      Sem vídeo = ignora
     */
 
     if (!url) {
@@ -500,13 +577,16 @@ function parseM3U(text) {
       name:
         title,
 
-      /*
-        Aqui está a correção principal
-        dos pôsteres.
-      */
-
       poster:
         poster || undefined,
+
+      /*
+        NOVO:
+        Fundo horizontal do Stremio
+      */
+
+      background:
+        background || undefined,
 
       posterShape:
         "poster",
@@ -538,7 +618,7 @@ function parseM3U(text) {
 
 
 /* =========================================================
-   BAIXAR PLAYLIST
+   CARREGAR PLAYLIST
 ========================================================= */
 
 async function loadPlaylist() {
@@ -548,7 +628,7 @@ async function loadPlaylist() {
 
 
   /*
-    Cache de 5 minutos.
+    Cache de 5 minutos
   */
 
   if (
@@ -577,7 +657,7 @@ async function loadPlaylist() {
       {
         headers: {
           "User-Agent":
-            "EriFilmes-Stremio-Addon/1.1"
+            "EriFilmes-Stremio-Addon/1.2"
         }
       }
     );
@@ -603,11 +683,9 @@ async function loadPlaylist() {
   cache = {
 
     items:
-
       items,
 
     loadedAt:
-
       now
 
   };
@@ -616,6 +694,12 @@ async function loadPlaylist() {
   const posters =
     items.filter(
       item => item.poster
+    ).length;
+
+
+  const backgrounds =
+    items.filter(
+      item => item.background
     ).length;
 
 
@@ -629,13 +713,18 @@ async function loadPlaylist() {
   );
 
 
+  console.log(
+    `Itens com background: ${backgrounds}`
+  );
+
+
   return items;
 
 }
 
 
 /* =========================================================
-   TRANSFORMAR ITEM EM META
+   META
 ========================================================= */
 
 function makeMeta(item) {
@@ -651,8 +740,19 @@ function makeMeta(item) {
     name:
       item.name,
 
+    /*
+      CAPA VERTICAL
+    */
+
     poster:
       item.poster,
+
+    /*
+      FUNDO HORIZONTAL
+    */
+
+    background:
+      item.background,
 
     posterShape:
       "poster",
@@ -668,10 +768,6 @@ function makeMeta(item) {
 
   };
 
-
-  /*
-    Remove campos vazios.
-  */
 
   return Object.fromEntries(
 
@@ -712,7 +808,7 @@ builder.defineCatalogHandler(
 
 
       /*
-        Pesquisa do Stremio.
+        BUSCA
       */
 
       const search =
@@ -740,7 +836,7 @@ builder.defineCatalogHandler(
 
 
       /*
-        Paginação.
+        PAGINAÇÃO
       */
 
       const skip =
@@ -799,7 +895,7 @@ builder.defineCatalogHandler(
 
 
 /* =========================================================
-   METADATA / DETALHES
+   DETALHES DO FILME
 ========================================================= */
 
 builder.defineMetaHandler(
@@ -821,7 +917,9 @@ builder.defineMetaHandler(
       if (!item) {
 
         return {
+
           meta: {}
+
         };
 
       }
@@ -861,7 +959,7 @@ builder.defineMetaHandler(
 
 
 /* =========================================================
-   STREAM / VÍDEO
+   STREAM
 ========================================================= */
 
 builder.defineStreamHandler(
@@ -883,7 +981,9 @@ builder.defineStreamHandler(
       if (!item) {
 
         return {
+
           streams: []
+
         };
 
       }
@@ -973,7 +1073,7 @@ console.log(
 );
 
 console.log(
-  "Versão: 1.1.0"
+  "Versão: 1.2.0"
 );
 
 console.log(
@@ -982,6 +1082,14 @@ console.log(
 
 console.log(
   `Playlist: ${PLAYLIST_URL}`
+);
+
+console.log(
+  "Poster: ATIVADO"
+);
+
+console.log(
+  "Background: ATIVADO"
 );
 
 console.log(
